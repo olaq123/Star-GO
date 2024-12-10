@@ -2,7 +2,7 @@ import SwiftUI
 import AuthenticationServices
 
 struct AuthenticationView: View {
-    @EnvironmentObject private var authViewModel: AuthViewModel
+    @StateObject private var authViewModel = AuthViewModel()
     @State private var email = ""
     @State private var password = ""
     @State private var username = ""
@@ -140,42 +140,78 @@ struct AuthenticationView: View {
                 request.requestedScopes = [.email, .fullName]
             } onCompletion: { result in
                 Task {
-                    do {
-                        try await authViewModel.handleAppleSignIn(result)
-                    } catch {
-                        showError = true
-                        errorMessage = error.localizedDescription
+                    switch result {
+                    case .success(let authorization):
+                        do {
+                            try await authViewModel.signInWithApple(authorization: authorization)
+                        } catch {
+                            print("Error signing in with Apple: \(error)")
+                        }
+                    case .failure(let error):
+                        print("Apple sign in failed: \(error)")
                     }
                 }
             }
-            .frame(height: 44)
+            .frame(maxWidth: 280, minHeight: 44)
             .cornerRadius(8)
             
-            // Google Sign In
-            Button {
+            // Google Sign In Button with Material Design
+            Button(action: {
                 Task {
                     do {
                         try await authViewModel.signInWithGoogle()
                     } catch {
-                        showError = true
-                        errorMessage = error.localizedDescription
+                        print("Error signing in with Google: \(error)")
                     }
                 }
-            } label: {
+            }) {
                 HStack {
-                    Image("google_logo") // Add this image to assets
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
-                    Text("Sign in with Google")
-                        .font(.headline)
+                    // Content wrapper (matches gsi-material-button-content-wrapper)
+                    HStack(spacing: 12) {
+                        // Google Logo (matches gsi-material-button-icon)
+                        Image("google_logo")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 20, height: 20)
+                        
+                        // Button Text (matches gsi-material-button-contents)
+                        Text("Sign in with Google")
+                            .font(.custom("Roboto", size: 14))
+                            .fontWeight(.medium)
+                            .foregroundColor(Color(hex: "1f1f1f"))
+                            .lineLimit(1)
+                            .layoutPriority(1)
+                        
+                        Spacer(minLength: 0)
+                    }
                 }
-                .frame(maxWidth: .infinity)
-                .frame(height: 44)
-                .background(Color.white)
-                .foregroundColor(.black)
-                .cornerRadius(8)
+                .frame(maxWidth: 400, minHeight: 40)
+                .padding(.horizontal, 12)
+                .background(
+                    ZStack {
+                        // Normal background
+                        Color.white
+                        
+                        // Hover/Press state overlay (matches gsi-material-button-state)
+                        Color.black.opacity(0.0)
+                            .animation(.easeInOut(duration: 0.218), value: true)
+                    }
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(Color(hex: "747775"), lineWidth: 1)
+                )
+                .cornerRadius(4)
+                // Hover effect
+                .shadow(color: Color.black.opacity(0), radius: 0, x: 0, y: 0)
+                .hoverEffect()
+                // Disabled state
+                .opacity(authViewModel.isLoading ? 0.38 : 1)
+                // Transition animations
+                .animation(.easeInOut(duration: 0.218), value: authViewModel.isLoading)
             }
+            .buttonStyle(GoogleButtonStyle())
+            .disabled(authViewModel.isLoading)
         }
         .padding(.horizontal)
     }
@@ -226,4 +262,60 @@ struct SpaceTextFieldStyle: TextFieldStyle {
             )
             .foregroundColor(SpaceTheme.foreground)
     }
-} 
+}
+
+// MARK: - Custom Button Style
+struct GoogleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .background(
+                configuration.isPressed ? 
+                Color.black.opacity(0.12) :
+                configuration.isPressed ? 
+                Color.black.opacity(0.08) : 
+                Color.clear
+            )
+            .shadow(
+                color: configuration.isPressed ? Color.clear :
+                       Color(hex: "3c4043").opacity(0.30),
+                radius: 1,
+                x: 0,
+                y: 1
+            )
+            .shadow(
+                color: configuration.isPressed ? Color.clear :
+                       Color(hex: "3c4043").opacity(0.15),
+                radius: 2,
+                x: 0,
+                y: 1
+            )
+            .animation(.easeInOut(duration: 0.218), value: configuration.isPressed)
+    }
+}
+
+// MARK: - Color Extension
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}

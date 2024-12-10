@@ -47,6 +47,7 @@
             <key>CFBundleURLSchemes</key>
             <array>
                 <string>com.googleusercontent.apps.YOUR-REVERSED-CLIENT-ID</string>
+                <string>com.googleusercontent.apps.508562165500-cic2e43c92lovp1n82ku7b6end75qjlq</string>
             </array>
         </dict>
     </array>
@@ -55,4 +56,4 @@
         <string>Default</string>
     </array>
 </dict>
-</plist> 
+</plist>

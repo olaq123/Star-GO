@@ -58,43 +58,30 @@ class AuthViewModel: ObservableObject {
         try await authService.signInWithGoogle(presenting: rootViewController)
     }
     
+    func signInWithGoogle() async throws {
+        isLoading = true
+        defer { isLoading = false }
+        try await authService.signInWithGoogle()
+    }
+    
+    func signInWithApple(authorization: ASAuthorization) async throws {
+        isLoading = true
+        defer { isLoading = false }
+        
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
+            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid credentials"])
+        }
+        
+        try await authService.signInWithApple(credential: appleIDCredential)
+    }
+    
     func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) async throws {
         isLoading = true
         defer { isLoading = false }
         
         switch result {
         case .success(let authorization):
-            guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
-                  let identityToken = appleIDCredential.identityToken,
-                  let tokenString = String(data: identityToken, encoding: .utf8) else {
-                throw GameError.authenticationFailed
-            }
-            
-            let nonce = UUID().uuidString // Generate a random nonce
-            
-            let credential = OAuthProvider.credential(
-                providerID: AuthProviderID.apple,
-                idToken: tokenString,
-                rawNonce: nonce,
-                accessToken: nil
-            )
-            
-            try await Auth.auth().signIn(with: credential)
-            
-            // Save additional user data if this is a new user
-            if let fullName = appleIDCredential.fullName {
-                let displayName = [
-                    fullName.givenName,
-                    fullName.familyName
-                ].compactMap { $0 }.joined(separator: " ")
-                
-                if !displayName.isEmpty {
-                    try await FirestoreService.shared.saveUser(
-                        Auth.auth().currentUser!,
-                        username: displayName
-                    )
-                }
-            }
+            try await signInWithApple(authorization: authorization)
             
         case .failure(let error):
             if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
