@@ -1,0 +1,64 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isProtected(planet) {
+      let protectionPeriod = duration.value(30, 'd');
+      return (request.time - planet.creationDate) < protectionPeriod;
+    }
+
+    // Connection test collection
+    match /_test/{document=**} {
+      allow read, write: if true;
+    }
+
+    // Research collection - allow read for all authenticated users
+    match /research/{document=**} {
+      allow read, write: if true;  // Temporarily allow all access for testing
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isOwner(userId);
+    }
+
+    // Game states
+    match /gameStates/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    // Planets
+    match /planets/{planetId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.owner == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        isOwner(resource.data.owner) || 
+        (!isProtected(resource.data) && !isOwner(resource.data.owner))
+      );
+    }
+
+    // Fleets
+    match /fleets/{fleetId} {
+      allow read: if isAuthenticated() && (
+        resource.data.owner == request.auth.uid ||
+        resource.data.targetOwnerId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && request.resource.data.owner == request.auth.uid;
+      allow update: if isAuthenticated() && resource.data.owner == request.auth.uid;
+    }
+
+    // Planet Types (reference data)
+    match /planetTypes/{typeId} {
+      allow read, write: if true;  // Temporarily allow all access for testing
+    }
+  }
+}

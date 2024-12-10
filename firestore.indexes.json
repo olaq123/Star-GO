@@ -1,0 +1,31 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "planets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "location.latitude", "order": "ASCENDING" },
+        { "fieldPath": "location.longitude", "order": "ASCENDING" },
+        { "fieldPath": "owner", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "fleets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "owner", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "arrivalTime", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "gameStates",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "lastUpdated", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
