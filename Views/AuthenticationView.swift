@@ -180,7 +180,7 @@ struct AuthenticationView: View {
                             .fontWeight(.medium)
                             .foregroundColor(Color(hex: "1f1f1f"))
                             .lineLimit(1)
-                            .layoutPriority(1)
+                            .layoutPriority(1.0)
                         
                         Spacer(minLength: 0)
                     }
