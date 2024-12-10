@@ -37,24 +37,44 @@ class AuthService: NSObject {
             throw GameError.authenticationFailed
         }
         
-        let config = GIDConfiguration(clientID: clientID)
-        GIDSignIn.sharedInstance.configuration = config
+        // Ensure configuration is set
+        GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientID: clientID)
         
-        let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presenting)
+        // Sign in with Google
+        let result = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<GIDSignInResult, Error>) in
+            GIDSignIn.sharedInstance.signIn(withPresenting: presenting) { result, error in
+                if let error = error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                
+                guard let result = result else {
+                    continuation.resume(throwing: GameError.authenticationFailed)
+                    return
+                }
+                
+                continuation.resume(returning: result)
+            }
+        }
+        
         guard let idToken = result.user.idToken?.tokenString else {
             throw GameError.authenticationFailed
         }
         
         let accessToken = result.user.accessToken.tokenString
-        let credential = OAuthProvider.credential(
-            providerID: AuthProviderID.google,
-            idToken: idToken,
-            rawNonce: "",
+        let credential = GoogleAuthProvider.credential(
+            withIDToken: idToken,
             accessToken: accessToken
         )
         
-        let authResult = try await Auth.auth().signIn(with: credential)
-        try await FirestoreService.shared.saveUser(authResult.user, username: result.user.profile?.name ?? "")
+        // Sign in with Firebase
+        try await Auth.auth().signIn(with: credential)
+        
+        // Save additional user data if needed
+        if let user = Auth.auth().currentUser,
+           let displayName = result.user.profile?.name {
+            try await FirestoreService.shared.saveUser(user, username: displayName)
+        }
     }
     
     // Apple Sign In

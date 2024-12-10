@@ -1,5 +1,6 @@
 import UIKit
 import SwiftUI
+import GoogleSignIn
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     var window: UIWindow?
@@ -25,6 +26,16 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.rootViewController = UIHostingController(rootView: rootView)
         self.window = window
         window.makeKeyAndVisible()
+        
+        // Handle any URLs that were passed to the app on launch
+        if let urlContext = connectionOptions.urlContexts.first {
+            self.scene(scene, openURLContexts: [urlContext])
+        }
+    }
+    
+    func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        guard let url = URLContexts.first?.url else { return }
+        GIDSignIn.sharedInstance.handle(url)
     }
     
     func sceneDidDisconnect(_ scene: UIScene) {

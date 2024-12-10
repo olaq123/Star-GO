@@ -6,130 +6,113 @@ struct AuthenticationView: View {
     @State private var email = ""
     @State private var password = ""
     @State private var username = ""
-    @State private var isSignUp = false
-    @State private var showError = false
-    @State private var errorMessage = ""
+    @State private var isSignUp = true
     
     var body: some View {
-        ZStack {
-            // Background
-            Color.black.edgesIgnoringSafeArea(.all)
-            StarsBackgroundView()
-            
-            VStack(spacing: 30) {
-                // Logo
-                logoSection
+        VStack(spacing: 24) {
+            // Logo and Title
+            VStack(spacing: 16) {
+                Image(systemName: "star.circle.fill")
+                    .resizable()
+                    .frame(width: 80, height: 80)
+                    .foregroundColor(.blue)
+                    .background(Color.black)
+                    .clipShape(Circle())
+                    .overlay(Circle().stroke(Color.blue, lineWidth: 2))
                 
-                // Auth Form
-                VStack(spacing: 20) {
-                    // Title
-                    Text(isSignUp ? "Create Account" : "Welcome Back")
-                        .font(.title2)
-                        .foregroundColor(SpaceTheme.foreground)
-                    
-                    // Form Fields
-                    authFormSection
-                    
-                    // Action Buttons
-                    actionButtonsSection
-                    
-                    // Divider
-                    HStack {
-                        Rectangle()
-                            .frame(height: 1)
-                            .foregroundColor(SpaceTheme.accent.opacity(0.3))
-                        Text("or")
-                            .font(.caption)
-                            .foregroundColor(SpaceTheme.foreground.opacity(0.7))
-                        Rectangle()
-                            .frame(height: 1)
-                            .foregroundColor(SpaceTheme.accent.opacity(0.3))
-                    }
-                    .padding(.horizontal)
-                    
-                    // Social Sign In Options
-                    socialSignInSection
-                    
-                    // Toggle Sign In/Up
-                    toggleAuthModeSection
-                }
-                .padding()
-                .background(SpaceTheme.background.opacity(0.9))
-                .cornerRadius(12)
-                .padding(.horizontal, 24)
+                Text("Star GO")
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundColor(.white)
             }
-        }
-        .alert("Error", isPresented: $showError) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(errorMessage)
-        }
-    }
-    
-    // MARK: - View Components
-    
-    private var logoSection: some View {
-        VStack {
-            Image(systemName: "star.circle.fill")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 80, height: 80)
-                .foregroundColor(SpaceTheme.accent)
+            .padding(.top, 60)
             
-            Text("Star GO")
-                .font(.largeTitle)
-                .foregroundColor(SpaceTheme.foreground)
-        }
-    }
-    
-    private var authFormSection: some View {
-        VStack(spacing: 16) {
-            if isSignUp {
-                TextField("Username", text: $username)
-                    .textFieldStyle(SpaceTextFieldStyle())
-            }
-            
-            TextField("Email", text: $email)
-                .textFieldStyle(SpaceTextFieldStyle())
-                .textContentType(.emailAddress)
-                .keyboardType(.emailAddress)
-                .autocapitalization(.none)
-            
-            SecureField("Password", text: $password)
-                .textFieldStyle(SpaceTextFieldStyle())
-                .textContentType(isSignUp ? .newPassword : .password)
-        }
-    }
-    
-    private var actionButtonsSection: some View {
-        VStack(spacing: 12) {
-            Button(action: handleMainAction) {
-                if authViewModel.isLoading {
-                    ProgressView()
-                        .tint(SpaceTheme.foreground)
+            // Main Form
+            VStack(spacing: 20) {
+                Text(isSignUp ? "Create Account" : "Sign In")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                
+                if isSignUp {
+                    signUpForm
                 } else {
-                    Text(isSignUp ? "Sign Up" : "Sign In")
-                        .font(.headline)
+                    signInForm
                 }
             }
-            .buttonStyle(SpaceButtonStyle())
-            .disabled(authViewModel.isLoading)
+            .padding(.horizontal, 32)
             
-            Button {
-                Task {
-                    do {
+            // Social Sign In Section
+            VStack(spacing: 16) {
+                Text("or")
+                    .foregroundColor(.gray)
+                
+                socialSignInSection
+                
+                // Continue as Guest Button
+                Button(action: {
+                    Task {
                         try await authViewModel.signInAnonymously()
-                    } catch {
-                        showError = true
-                        errorMessage = error.localizedDescription
                     }
+                }) {
+                    Text("Continue as Guest")
+                        .foregroundColor(.blue)
+                        .font(.system(size: 16))
                 }
-            } label: {
-                Text("Continue as Guest")
-                    .font(.subheadline)
-                    .foregroundColor(SpaceTheme.accent)
+                
+                // Toggle Sign In/Sign Up
+                Button(action: { isSignUp.toggle() }) {
+                    Text(isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up")
+                        .foregroundColor(.blue)
+                        .font(.system(size: 16))
+                }
             }
-            .disabled(authViewModel.isLoading)
+            
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
+    }
+    
+    private var signUpForm: some View {
+        VStack(spacing: 16) {
+            CustomTextField(text: $username, placeholder: "Username", imageName: "person")
+            CustomTextField(text: $email, placeholder: "Email", imageName: "envelope")
+            CustomTextField(text: $password, placeholder: "Password", imageName: "lock", isSecure: true)
+            
+            Button(action: {
+                Task {
+                    try await authViewModel.signUp(email: email, password: password, username: username)
+                }
+            }) {
+                Text("Sign Up")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.blue)
+                    .cornerRadius(8)
+            }
+        }
+    }
+    
+    private var signInForm: some View {
+        VStack(spacing: 16) {
+            CustomTextField(text: $email, placeholder: "Email", imageName: "envelope")
+            CustomTextField(text: $password, placeholder: "Password", imageName: "lock", isSecure: true)
+            
+            Button(action: {
+                Task {
+                    try await authViewModel.signIn(email: email, password: password)
+                }
+            }) {
+                Text("Sign In")
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 44)
+                    .background(Color.blue)
+                    .cornerRadius(8)
+            }
         }
     }
     
@@ -152,10 +135,11 @@ struct AuthenticationView: View {
                     }
                 }
             }
-            .frame(maxWidth: 280, minHeight: 44)
-            .cornerRadius(8)
+            .frame(height: 44)
+            .frame(maxWidth: 280)
+            .signInWithAppleButtonStyle(.white)
             
-            // Google Sign In Button with Material Design
+            // Google Sign In Button
             Button(action: {
                 Task {
                     do {
@@ -166,130 +150,51 @@ struct AuthenticationView: View {
                 }
             }) {
                 HStack {
-                    // Content wrapper (matches gsi-material-button-content-wrapper)
-                    HStack(spacing: 12) {
-                        // Google Logo (matches gsi-material-button-icon)
-                        Image("google_logo")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 20, height: 20)
-                        
-                        // Button Text (matches gsi-material-button-contents)
-                        Text("Sign in with Google")
-                            .font(.custom("Roboto", size: 14))
-                            .fontWeight(.medium)
-                            .foregroundColor(Color(hex: "1f1f1f"))
-                            .lineLimit(1)
-                            .layoutPriority(1.0)
-                        
-                        Spacer(minLength: 0)
-                    }
+                    Image("google_logo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 20, height: 20)
+                    
+                    Text("Sign in with Google")
+                        .font(.system(size: 16))
+                        .foregroundColor(Color(hex: "1f1f1f"))
                 }
-                .frame(maxWidth: 400, minHeight: 40)
-                .padding(.horizontal, 12)
-                .background(
-                    ZStack {
-                        // Normal background
-                        Color.white
-                        
-                        // Hover/Press state overlay (matches gsi-material-button-state)
-                        Color.black.opacity(0.0)
-                            .animation(.easeInOut(duration: 0.218), value: true)
-                    }
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color(hex: "747775"), lineWidth: 1)
-                )
-                .cornerRadius(4)
-                // Hover effect
-                .shadow(color: Color.black.opacity(0), radius: 0, x: 0, y: 0)
-                .hoverEffect()
-                // Disabled state
-                .opacity(authViewModel.isLoading ? 0.38 : 1)
-                // Transition animations
-                .animation(.easeInOut(duration: 0.218), value: authViewModel.isLoading)
-            }
-            .buttonStyle(GoogleButtonStyle())
-            .disabled(authViewModel.isLoading)
-        }
-        .padding(.horizontal)
-    }
-    
-    private var toggleAuthModeSection: some View {
-        Button {
-            withAnimation {
-                isSignUp.toggle()
-                email = ""
-                password = ""
-                username = ""
-            }
-        } label: {
-            Text(isSignUp ? "Already have an account? Sign In" : "New to Star GO? Sign Up")
-                .font(.subheadline)
-                .foregroundColor(SpaceTheme.accent)
-        }
-    }
-    
-    // MARK: - Actions
-    
-    private func handleMainAction() {
-        Task {
-            do {
-                if isSignUp {
-                    try await authViewModel.signUp(email: email, password: password, username: username)
-                } else {
-                    try await authViewModel.signIn(email: email, password: password)
-                }
-            } catch {
-                showError = true
-                errorMessage = error.localizedDescription
+                .frame(maxWidth: 280)
+                .frame(height: 44)
+                .background(Color.white)
+                .cornerRadius(8)
             }
         }
     }
 }
 
 // MARK: - Custom Text Field Style
-struct SpaceTextFieldStyle: TextFieldStyle {
-    func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .padding()
-            .background(SpaceTheme.background)
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(SpaceTheme.accent.opacity(0.3), lineWidth: 1)
-            )
-            .foregroundColor(SpaceTheme.foreground)
-    }
-}
-
-// MARK: - Custom Button Style
-struct GoogleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .background(
-                configuration.isPressed ? 
-                Color.black.opacity(0.12) :
-                configuration.isPressed ? 
-                Color.black.opacity(0.08) : 
-                Color.clear
-            )
-            .shadow(
-                color: configuration.isPressed ? Color.clear :
-                       Color(hex: "3c4043").opacity(0.30),
-                radius: 1,
-                x: 0,
-                y: 1
-            )
-            .shadow(
-                color: configuration.isPressed ? Color.clear :
-                       Color(hex: "3c4043").opacity(0.15),
-                radius: 2,
-                x: 0,
-                y: 1
-            )
-            .animation(.easeInOut(duration: 0.218), value: configuration.isPressed)
+struct CustomTextField: View {
+    @Binding var text: String
+    var placeholder: String
+    var imageName: String
+    var isSecure: Bool = false
+    
+    var body: some View {
+        ZStack(alignment: .leading) {
+            if text.isEmpty {
+                Text(placeholder)
+                    .foregroundColor(.gray)
+            }
+            
+            if isSecure {
+                SecureField("", text: $text)
+            } else {
+                TextField("", text: $text)
+            }
+        }
+        .padding()
+        .background(Color.white)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(Color.gray, lineWidth: 1)
+        )
     }
 }
 

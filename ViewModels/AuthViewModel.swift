@@ -52,27 +52,47 @@ class AuthViewModel: ObservableObject {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let window = windowScene.windows.first,
               let rootViewController = window.rootViewController else {
-            throw GameError.authenticationFailed
+            throw GameError.noRootViewController
         }
         
         try await authService.signInWithGoogle(presenting: rootViewController)
-    }
-    
-    func signInWithGoogle() async throws {
-        isLoading = true
-        defer { isLoading = false }
-        try await authService.signInWithGoogle()
     }
     
     func signInWithApple(authorization: ASAuthorization) async throws {
         isLoading = true
         defer { isLoading = false }
         
-        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
-            throw NSError(domain: "", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid credentials"])
+        guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
+              let identityToken = appleIDCredential.identityToken,
+              let tokenString = String(data: identityToken, encoding: .utf8) else {
+            throw GameError.invalidCredentials
         }
         
-        try await authService.signInWithApple(credential: appleIDCredential)
+        let nonce = UUID().uuidString
+        
+        let credential = OAuthProvider.credential(
+            providerID: AuthProviderID.apple,
+            idToken: tokenString,
+            rawNonce: nonce,
+            accessToken: nil
+        )
+        
+        try await Auth.auth().signIn(with: credential)
+        
+        // Save additional user data if this is a new user
+        if let fullName = appleIDCredential.fullName {
+            let displayName = [
+                fullName.givenName,
+                fullName.familyName
+            ].compactMap { $0 }.joined(separator: " ")
+            
+            if !displayName.isEmpty {
+                try await FirestoreService.shared.saveUser(
+                    Auth.auth().currentUser!,
+                    username: displayName
+                )
+            }
+        }
     }
     
     func handleAppleSignIn(_ result: Result<ASAuthorization, Error>) async throws {

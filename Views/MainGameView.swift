@@ -144,7 +144,7 @@ struct MainGameView: View {
         (title: "Planet", icon: "globe", selectedIcon: "globe.americas.fill"),
         (title: "Map", icon: "map", selectedIcon: "map.fill"),
         (title: "Fleet", icon: "airplane", selectedIcon: "airplane.circle.fill"),
-        (title: "Research", icon: "atom", selectedIcon: "atom.circle.fill")
+        (title: "Research", icon: "sparkles", selectedIcon: "sparkles.circle.fill")
     ]
 }
 
@@ -157,4 +157,4 @@ struct MainGameView_Previews: PreviewProvider {
             .previewInterfaceOrientation(.landscapeLeft)
     }
 }
-#endif 
+#endif

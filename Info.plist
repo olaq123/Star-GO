@@ -2,6 +2,19 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>com.googleusercontent.apps.508562165500-cic2e43c92lovp1n82ku7b6end75qjlq</string>
+            </array>
+        </dict>
+    </array>
+    <key>GIDClientID</key>
+    <string>508562165500-cic2e43c92lovp1n82ku7b6end75qjlq.apps.googleusercontent.com</string>
     <key>UIBackgroundModes</key>
     <array>
         <string>location</string>
@@ -41,16 +54,6 @@
     <false/>
     <key>FirebaseAutomaticScreenReportingEnabled</key>
     <false/>
-    <key>CFBundleURLTypes</key>
-    <array>
-        <dict>
-            <key>CFBundleURLSchemes</key>
-            <array>
-                <string>com.googleusercontent.apps.YOUR-REVERSED-CLIENT-ID</string>
-                <string>com.googleusercontent.apps.508562165500-cic2e43c92lovp1n82ku7b6end75qjlq</string>
-            </array>
-        </dict>
-    </array>
     <key>com.apple.developer.applesignin</key>
     <array>
         <string>Default</string>

@@ -8,37 +8,59 @@ struct HomeWorldSetupView: View {
     
     var body: some View {
         ZStack {
+            Color.black.edgesIgnoringSafeArea(.all)
             StarsBackgroundView()
             
-            VStack(spacing: 20) {
-                Text("Establish Your Home Base")
-                    .font(.title)
-                    .foregroundColor(SpaceTheme.foreground)
+            VStack(spacing: 24) {
+                // Header
+                VStack(spacing: 16) {
+                    Image(systemName: "globe")
+                        .resizable()
+                        .frame(width: 60, height: 60)
+                        .foregroundColor(.blue)
+                    
+                    Text("Establish Your Home Base")
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                    
+                    Text("Enter your address to establish your home planet")
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+                .padding(.top, 40)
                 
-                Text("Enter your address to establish your home planet")
-                    .foregroundColor(SpaceTheme.foreground.opacity(0.7))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
+                // Address Input
+                CustomTextField(
+                    text: $address,
+                    placeholder: "Enter your address",
+                    imageName: "house.fill"
+                )
+                .padding(.horizontal, 32)
                 
-                TextField("Enter your address", text: $address)
-                    .textFieldStyle(SpaceTextFieldStyle())
-                    .padding()
-                
-                Button {
-                    setupHomeworld()
-                } label: {
+                // Action Button
+                Button(action: setupHomeworld) {
                     if locationManager.isSettingUpHomeworld {
                         ProgressView()
-                            .tint(SpaceTheme.foreground)
+                            .tint(.white)
                     } else {
                         Text("Establish Base")
                             .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 44)
                     }
                 }
-                .buttonStyle(SpaceButtonStyle())
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(address.isEmpty ? Color.blue.opacity(0.5) : Color.blue)
+                .cornerRadius(8)
+                .padding(.horizontal, 32)
                 .disabled(address.isEmpty || locationManager.isSettingUpHomeworld)
+                
+                Spacer()
             }
-            .padding()
         }
         .alert("Error", isPresented: $showError) {
             Button("OK", role: .cancel) {}
@@ -57,4 +79,4 @@ struct HomeWorldSetupView: View {
             }
         }
     }
-} 
+}
